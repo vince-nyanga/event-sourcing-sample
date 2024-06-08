@@ -17,7 +17,7 @@ public class BankAccountStore
         // if every 5 events, take a snapshot
         if (_eventStreams[@event.AccountId].Count % 5 == 0)
         {
-            TakeSnapshot(@event);
+            SaveSnapshot(@event);
         }
     }
     
@@ -28,7 +28,7 @@ public class BankAccountStore
             return (null, 0);
         }
 
-        var snapshot = GetLatestSnapshot(accountId);
+        var snapshot = LoadSnapshot(accountId);
         var bankAccount = snapshot != null ? BankAccount.FromSnapshot(snapshot) : new BankAccount();
         
         var latestEvents = stream.Values
@@ -44,13 +44,13 @@ public class BankAccountStore
         return (bankAccount, highestSequenceNumber);
     }
     
-    private BankAccountSnapshot? GetLatestSnapshot(Guid accountId)
+    private BankAccountSnapshot? LoadSnapshot(Guid accountId)
     {
         return !_snapshots.TryGetValue(accountId, out var snapshots)
             ? null : snapshots.Last().Value;
     }
     
-    private void TakeSnapshot(BankAccountEvent @event)
+    private void SaveSnapshot(BankAccountEvent @event)
     {
         var (bankAccount, sequenceNumber) = Load(@event.AccountId);
         if (!_snapshots.TryGetValue(@event.AccountId, out var bankAccountSnapshots))
